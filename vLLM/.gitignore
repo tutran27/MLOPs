@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments & API Keys / Secrets
+.env
+.env.*
+**/.env
+.venv/
+venv/
+env/
+ENV/
+
+# Model checkpoints, weights, & HuggingFace cache
+*.bin
+*.pt
+*.pth
+*.safetensors
+*.onnx
+models/
+model_weights/
+.cache/
+hf_cache/
+
+# Observability stack data (vLLM stack: Grafana, Loki, Prometheus, Alloy)
+vllm-stack/data/
+vllm-stack/loki/data/
+vllm-stack/grafana/data/
+vllm-stack/prometheus/data/
+prometheus_data/
+grafana_data/
+loki_data/
+
+# Logs
+logs/
+*.log
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

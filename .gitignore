@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+**/.venv/
+
+# Secrets & Environment configs
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Logs
+logs/
+*.log
+**/logs/
+
+# Airflow
+**/airflow.cfg
+**/airflow.db
+**/accuracy.txt
+
+# Large ML models & weights
+*.bin
+*.pt
+*.pth
+*.safetensors
+*.onnx
+models/
+model_weights/
+.cache/
+hf_cache/
+
+# Metrics / Observability data directories
+prometheus_data/
+grafana_data/
+loki_data/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

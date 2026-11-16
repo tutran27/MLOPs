@@ -1,0 +1,136 @@
+services:
+
+  vllm:
+    image: vllm/vllm-openai:latest
+    container_name: vllm
+
+    gpus: all
+    ipc: host
+
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+
+    command:
+      - --model
+      - ${MODEL}
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --served-model-name
+      - ${MODEL_SERVED}
+      - --gpu-memory-utilization
+      - "0.80"
+      - --max-num-seqs
+      - "64"
+      - --max-model-len
+      - "8192"
+      - --override-generation-config
+      - '{"temperature": 0.3, "presence_penalty": 0.2, "repetition_penalty": 1.1}'
+
+
+  loki:
+    image: grafana/loki:latest
+
+    command:
+      - -config.file=/etc/loki/loki.yaml
+
+    volumes:
+      - ./loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki_data:/loki
+      
+    ports:
+      - "3100:3100"
+
+  alloy:
+    image: grafana/alloy:latest
+
+    command:
+      - run
+      - /etc/alloy/config.alloy
+
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    depends_on:
+      - loki
+
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - vllm
+
+  grafana:
+    image: grafana/grafana:latest
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+
+    depends_on:
+      - loki
+      - prometheus
+
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: litellm
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./litellm/config.yaml:/app/config.yaml:ro
+    command:
+      - --config
+      - /app/config.yaml
+      - --port
+      - "4000"
+    environment:
+      PORT: "4000"
+      UI_USERNAME: admin
+      UI_PASSWORD: ${LITELLM_UI_PASSWORD:-admin123}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+    depends_on:
+      - vllm
+      - litellm_db
+
+  litellm_db:
+    image: postgres:17
+    container_name: litellm_db
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: litellm123
+      
+    volumes:
+      - litellm_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+
+volumes:
+  hf_cache:
+  loki_data:
+  grafana_data:
+  prometheus_data:
+  litellm_db_data:

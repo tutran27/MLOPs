@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments & Secrets
+.env
+.env.*
+.venv/
+venv/
+env/
+ENV/
+
+# Prometheus / Grafana / Metrics storage
+prometheus_data/
+grafana_data/
+data/
+*.tar.gz
+
+# Logs
+logs/
+*.log
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

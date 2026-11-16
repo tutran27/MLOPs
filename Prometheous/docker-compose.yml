@@ -1,0 +1,21 @@
+services:
+  ml-api:
+    build: .
+    ports:
+      - "8000:8000"
+
+  prometheus:
+    image: prom/prometheus:v3.13.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules.yml:/etc/prometheus/rules.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+
+volumes:
+  prometheus-data:
