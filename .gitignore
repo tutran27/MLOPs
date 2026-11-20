@@ -48,3 +48,5 @@ loki_data/
 .idea/
 .DS_Store
 Thumbs.db
+
+airflow-mlops/
