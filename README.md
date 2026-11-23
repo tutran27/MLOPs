@@ -14,7 +14,7 @@ flowchart LR
     Repo --> AFML["airflow-mlops/\nEnd-to-End Penguins Pipeline\nDockerOperator + FastAPI"]
     Repo --> PROM["Prometheous/\nFastAPI ML Demo\n+ Prometheus Monitoring"]
     Repo --> VLLM["vLLM/\nLLM Serving Labs + vllm-stack\n(vLLM, LiteLLM, PLG Stack)"]
-    Repo --> MLF["Mlflow/\n(Reserved / Empty)"]
+    Repo --> MLF["Mlflow/\nTracking, Autologging,\nOptuna Nested Runs & Registry"]
 ```
 
 | Thư mục | Chủ đề chính | Công nghệ sử dụng | Tài liệu chi tiết |
@@ -23,7 +23,7 @@ flowchart LR
 | [`airflow-mlops/`](./airflow-mlops) | Hệ thống MLOps end-to-end phân loại Penguins (train song song, Champion vs Challenger, hot-reload) | Apache Airflow 3.4.0 (`LocalExecutor`), `DockerOperator`, Scikit-learn, FastAPI, Docker Shared Volume | [`airflow-mlops/README.md`](./airflow-mlops/README.md) |
 | [`Prometheous/`](./Prometheous) | Instrument ML Inference API và thu thập metrics bằng Prometheus | FastAPI, `prometheus-client`, Prometheus `v3.13.1`, Docker Compose | Mục [4.3](#43-prometheous--giám-sát-ml-api-với-prometheus) |
 | [`vLLM/`](./vLLM) | Thực hành LLM Serving, Benchmarking (TTFT/TPOT/E2E) và triển khai AI Gateway + Observability | vLLM, OpenAI SDK, LiteLLM Proxy, PostgreSQL 17, Prometheus, Grafana, Loki, Alloy | [`vLLM/README.md`](./vLLM/README.md) |
-| [`Mlflow/`](./Mlflow) | Thư mục dành riêng cho bài thực hành MLflow độc lập | *(Hiện đang trống)* | Mục [4.5](#45-mlflow) |
+| [`Mlflow/`](./Mlflow) | Thực hành MLflow độc lập: Tracking, Autologging, Optuna Nested Runs & Model Registry (Aliases) | MLflow 3, Scikit-learn, Optuna, SQLite | Mục [4.5](#45-mlflow--thực-hành-mlflow-tracking-optuna--model-registry) |
 
 > **Lưu ý về Git:** Thư mục `airflow-mlops/` hiện được khai báo trong `.gitignore` của repository gốc và được quản lý như một sub-project độc lập.
 
@@ -83,7 +83,13 @@ MLOPs/
 │       ├── loki/loki.yaml
 │       ├── alloy/config.alloy
 │       └── grafana/provisioning/datasources/
-└── Mlflow/                                # Thư mục chờ cho lab MLflow độc lập
+└── Mlflow/                                # Lab MLflow độc lập (Tracking, Optuna, Model Registry)
+    ├── test.py                            # Kiểm tra kết nối MLflow Tracking Server
+    ├── tracking_demo.py                   # Log params, metrics & tags thủ công (Breast Cancer)
+    ├── autologging.py                     # Thực hành mlflow.autolog() trên Iris RandomForest
+    ├── optimization.py                    # Tối ưu siêu tham số với Optuna (multi-objective) + Nested Runs
+    ├── registry_v1.py                     # Đăng ký model v1 (LogisticRegression) & gắn alias @prod
+    └── registry_v2.py                     # So sánh RandomForest tốt nhất với @prod & tự động promote
 ```
 
 ---
@@ -109,6 +115,7 @@ MLOPs/
 | `vLLM/vllm-stack` | Grafana | `3000` | Pre-provisioned Prometheus & Loki |
 | `vLLM/vllm-stack` | Prometheus | `9090` | Scrape vLLM (`:8000`) & LiteLLM (`:4000`) |
 | `vLLM/vllm-stack` | Loki | `3100` | Thu nhận Docker logs từ Grafana Alloy |
+| `Mlflow` | MLflow Tracking Server & UI | `5000` | Backend SQLite (`mlflow.db`) & `./mlartifacts` |
 
 > **Cảnh báo trùng cổng:** Một số module dùng chung cổng **`8000`**, **`8080`** hoặc **`9090`**. Hãy `docker compose down` stack cũ trước khi khởi chạy stack khác cùng cổng.
 
@@ -226,9 +233,44 @@ Xem sơ đồ kiến trúc, cấu hình `.env` và hướng dẫn chi tiết t�
 
 ---
 
-### 4.5. `Mlflow/`
+### 4.5. `Mlflow/` — Thực hành MLflow Tracking, Optuna & Model Registry
 
-Thư mục `Mlflow/` hiện đang trống và được giữ lại làm không gian mở rộng cho các bài thực hành MLflow độc lập (Tracking Server, Model Registry, Artifact Store). Hiện tại, các ví dụ tích hợp MLflow đang nằm tại:
+Bộ bài thực hành độc lập sử dụng **MLflow 3**, **Scikit-learn** và **Optuna**, kết nối tới MLflow Tracking Server cục bộ (SQLite backend + local artifact store):
+
+| File | Experiment | Nội dung thực hành |
+| :--- | :--- | :--- |
+| `test.py` | `demo` | Kiểm tra kết nối tới MLflow Server (`http://127.0.0.1:5000`), log `param`/`metric` cơ bản và in `run_id`, `artifact_uri`. |
+| `tracking_demo.py` | `breast-cancer-classification` | Huấn luyện `LogisticRegression` với các giá trị `C` (`0.01, 0.1, 1.0`), log `params`, `metrics` (`accuracy`, `f1_score`) và `tag` thủ công. |
+| `autologging.py` | `use-autolog` | Minh họa `mlflow.autolog()` tự động ghi lại params, metrics, model và artifacts khi huấn luyện `RandomForestClassifier` trên bộ dữ liệu Iris. |
+| `optimization.py` | `Cancer-classification-optimization` | Tối ưu đa mục tiêu (`f1`, `recall`) bằng **Optuna** kết hợp **Nested Runs** (`nested=True`), sau đó refit `best_model` và log kèm `skops_trusted_types` vào run cha. |
+| `registry_v1.py` | `Registry-Demo` | Huấn luyện `LogisticRegression`, log model kèm `input_example` + `signature`, đăng ký vào Model Registry (`breast-cancer-model`), gắn tags, description và alias `@prod`. |
+| `registry_v2.py` | `Registry-Demo` | Thử nghiệm `RandomForestClassifier` (`n_estimators` = `50, 100, 200`), chọn model tốt nhất, nạp `models:/breast-cancer-model@prod` bằng `pyfunc` để so sánh và tự động đăng ký/chuyển alias `@prod` nếu tốt hơn hoặc bằng. |
+
+**Khởi chạy MLflow Tracking Server & thực hành:**
+
+```bash
+cd Mlflow
+
+# 1. Khởi chạy MLflow Server (UI tại http://127.0.0.1:5000)
+mlflow server \
+  --backend-store-uri sqlite:///mlflow.db \
+  --artifacts-destination ./mlartifacts \
+  --host 127.0.0.1 \
+  --port 5000
+
+# 2. Chạy các script thực hành (ở một terminal khác)
+python tracking_demo.py
+python autologging.py
+python optimization.py
+
+# 3. Thực hành Model Registry (chạy v1 trước để tạo @prod, sau đó chạy v2 để so sánh & promote)
+python registry_v1.py
+python registry_v2.py
+```
+
+*(Các file dữ liệu sinh ra như `mlflow.db`, `mlartifacts/`, `mlruns/` đã được loại trừ trong `.gitignore`.)*
+
+Ngoài ra, các ví dụ tích hợp MLflow cùng Airflow và FastAPI nằm tại:
 - [`AirFlow/dags/experiment_tracking.py`](./AirFlow/dags/experiment_tracking.py)
 - [`AirFlow/dags/inference_api.py`](./AirFlow/dags/inference_api.py)
 
