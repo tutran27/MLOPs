@@ -21,6 +21,10 @@ general_settings:
 router_settings:
   routing_strategy: "simple-shuffle"
   allowed_models: ["qwen3-4b", "openai/gpt-oss-20b"]
+  num_retries: 2
+  timeout: 60
+  fallbacks:
+    - {"qwen3-4b": ["openai/gpt-oss-20b"]}
 
 litellm_settings:
   success_callback: ["prometheus"]

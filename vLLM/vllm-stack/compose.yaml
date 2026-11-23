@@ -23,14 +23,17 @@ services:
       - --served-model-name
       - ${MODEL_SERVED}
       - --gpu-memory-utilization
-      - "0.80"
+      - "0.90"
       - --max-num-seqs
       - "64"
       - --max-model-len
       - "8192"
+      - --reasoning-parser
+      - qwen3
+      - --default-chat-template-kwargs
+      - '{"enable_thinking": false}'
       - --override-generation-config
       - '{"temperature": 0.3, "presence_penalty": 0.2, "repetition_penalty": 1.1}'
-
 
   loki:
     image: grafana/loki:latest
@@ -91,7 +94,6 @@ services:
     depends_on:
       - loki
       - prometheus
-
 
   litellm:
     image: ghcr.io/berriai/litellm:main-latest

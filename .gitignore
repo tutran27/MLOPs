@@ -27,6 +27,12 @@ logs/
 **/airflow.db
 **/accuracy.txt
 
+# MLflow
+**/mlflow.db
+**/mlflow.db-*
+**/mlartifacts/
+**/mlruns/
+
 # Large ML models & weights
 *.bin
 *.pt

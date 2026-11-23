@@ -1,0 +1,41 @@
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+secrets/
+
+# Docker Compose local overrides
+compose.override.yaml
+compose.override.yml
+docker-compose.override.yaml
+docker-compose.override.yml
+
+# Local data, model weights, cache & logs
+*.log
+logs/
+data/
+models/
+.cache/
+hf_cache/
+loki_data/
+grafana_data/
+prometheus_data/
+litellm_db_data/
+
+# Python / scripts
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
