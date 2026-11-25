@@ -60,8 +60,6 @@ with mlflow.start_run(run_id=best_run_id):
                                 input_example=X_test[:5],
                                 signature=mlflow.models.infer_signature(X_test, predicts),
                                 skops_trusted_types=["sklearn.tree._tree.Tree"])
-    mlflow.log_metrics({"f1": best_f1, "recall": best_recall})
-
 
     prod_model = mlflow.pyfunc.load_model("models:/breast-cancer-model@prod")
     pro_predict = prod_model.predict(X_test)
@@ -74,10 +72,10 @@ with mlflow.start_run(run_id=best_run_id):
         client.set_registered_model_alias("breast-cancer-model", "prod", reg.version)
         client.set_model_version_tag(name = "breast-cancer-model", 
                             version = reg.version, 
-                            key= "f1", value = str(best_f1))
+                            key= "f1_score", value = str(best_f1))
         client.set_model_version_tag(name = "breast-cancer-model", 
                             version = reg.version, 
-                            key= "recall", value = str(best_recall))
+                            key= "recall_score", value = str(best_recall))
         client.update_model_version(name="breast-cancer-model", 
         version = reg.version,
                             description="RandomForest classifier with f1: {} and recall: {}".format(best_f1, best_recall))
