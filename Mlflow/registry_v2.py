@@ -77,8 +77,8 @@ with mlflow.start_run(run_id=best_run_id):
                             version = reg.version, 
                             key= "recall_score", value = str(best_recall))
         client.update_model_version(name="breast-cancer-model", 
-        version = reg.version,
-                            description="RandomForest classifier with f1: {} and recall: {}".format(best_f1, best_recall))
+                                    version = reg.version,
+                                    description="RandomForest classifier with f1: {} and recall: {}".format(best_f1, best_recall))
 
     else:
         print("Model not registered")

@@ -87,18 +87,53 @@ winner = min(results, key=lambda x: x["best_val_rmse"])
 
 build_fn, _ = MODEL_SPECS[winner["model_name"]]
 best_model = build_fn(winner["best_params"])
-best_model.fit(X_val, y_val)
+best_model.fit(pd.concat([X_train, X_val]), pd.concat([y_train, y_val]))
 y_test_pred = best_model.predict(X_test)
 test_mse = mean_squared_error(y_test, y_test_pred)
 test_r2 = r2_score(y_test, y_test_pred)
 
+from mlflow import MlflowClient
+client = MlflowClient()
+
 with mlflow.start_run(run_id=winner["run_id"]):
+    print(f"Model: {winner['model_name']}, Best MSE: {winner['best_val_rmse']}")
     mlflow.log_metrics({"test_mse": test_mse, "test_r2": test_r2})
     model_info = mlflow.sklearn.log_model(
         best_model,
         name="best_model",
         input_example=X_train.iloc[:5],
         skops_trusted_types=["sklearn.tree._tree.Tree"],
+    )
+try:
+    prod_model = mlflow.pyfunc.load_model(model_uri="models:/california_housing@prod")
+    test_prod_model_result = prod_model.predict(X_test)
+    mse_prod = mean_squared_error(y_test, test_prod_model_result)
+except Exception as e:
+    print(f"Error loading prod model: {e}")
+    mse_prod = float("inf")
+
+if test_mse <= mse_prod :
+    print(f"New best model: {winner['model_name']}, test_mse: {test_mse}")
+    
+    reg=mlflow.register_model(
+        model_uri=model_info.model_uri,
+        name="california_housing"
+    )       
+    client.set_registered_model_alias(
+        name="california_housing",
+        alias="prod",
+        version=reg.version,
+    )
+    client.set_model_version_tag(
+        name="california_housing",
+        version=f"{reg.version}",
+        key="mse",
+        value=str(test_mse)
+    )
+    client.update_model_version(
+        name="california_housing",
+        version=f"{reg.version}",
+        description=f"{winner['model_name']} classifier with test_mse: {test_mse}"
     )
 
 
